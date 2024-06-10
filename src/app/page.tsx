@@ -1,95 +1,298 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { useEffect, useState } from "react";
+import Button from "@mui/material/Button";
+import CssBaseline from "@mui/material/CssBaseline";
+import TextField from "@mui/material/TextField";
+import Box from "@mui/material/Box";
+import Container from "@mui/material/Container";
+import {
+  Alert,
+  AppBar,
+  FormControl,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
+  Skeleton,
+  Snackbar,
+  Toolbar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import {
+  Logout as LogoutIcon,
+  Search as SearchIcon,
+} from "@mui/icons-material";
+import { Search, SearchIconWrapper, StyledInputBase } from "./components";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
-  return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+  const router = useRouter();
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+  const [fields, setFields] = useState<Field[]>([]);
+  const [client, setClient] = useState<Client | null>();
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const [error, setError] = useState<string | null>();
+  const [success, setSuccess] = useState<boolean>();
+
+  const fetchFields = async () => {
+    setIsLoading(true);
+
+    try {
+      const res = await fetch("/api/fields");
+      if (!res.ok) {
+        setError(res.statusText);
+        if (res.status === 401) {
+          handleLogout();
+        }
+      }
+
+      const fetchedFields = await res.json();
+
+      setFields(fetchedFields);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchCC = async (cedula: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/clients/fetch?cc=${cedula}`);
+
+      if (!res.ok) {
+        setError(res.statusText);
+        if (res.status === 401) {
+          handleLogout();
+        }
+      }
+
+      const data = await res.json();
+
+      return data[0] as Client;
+    } catch (error) {
+      console.error(error);
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFields();
+  }, []);
+
+  const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+
+    const cedula = data.get("cedula")?.toString();
+
+    if (!!cedula) {
+      const clientData = await fetchCC(cedula);
+      setClient(clientData);
+    }
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const formData = fields.map(({ name }) => ({
+      field: name,
+      newValue: data.get(name)?.toString(),
+      // @ts-ignore
+      oldValue: client?.[name],
+    }));
+
+    const updateData = await fetch("/api/client/update", {
+      method: "POST",
+      body: JSON.stringify({ updateData: formData }),
+    });
+  };
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch("/api/auth/logout", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        throw new Error("Network response was not ok");
+      } else {
+        router.push("/login");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const renderField = (field: Field) => {
+    const { type, id, name, title, opciones } = field;
+    if (type === "text") {
+      return (
+        <TextField
+          key={id.toString()}
+          margin="normal"
+          required
+          fullWidth
+          id={name}
+          label={title}
+          name={name}
+          defaultValue={client?.[name]}
+          disabled={!client}
         />
-      </div>
+      );
+    } else {
+      // @ts-ignore
+      const parsedOptions: Field["opciones"] = JSON.parse(opciones);
+      const defaultValue =
+        parsedOptions?.list.find((item) => item.name === client?.[name])?.id ??
+        2;
+      return (
+        <FormControl variant="outlined" fullWidth margin="normal">
+          <InputLabel id={name} sx={{ textTransform: "capitalize" }}>
+            {name}
+          </InputLabel>
+          <Select
+            labelId={name}
+            label={name}
+            disabled={!client}
+            defaultValue={defaultValue}
+          >
+            {parsedOptions?.list?.map(({ name, id }) => (
+              <MenuItem value={id}>{name}</MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      );
+    }
+  };
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+  return (
+    <>
+      <Box sx={{ flexGrow: 1 }}>
+        <AppBar position="static">
+          <Toolbar
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 2,
+            }}
+            component="form"
+            onSubmit={handleSearch}
+          >
+            <Typography
+              variant="h6"
+              noWrap
+              component="div"
+              sx={{ display: { xs: "none", sm: "block" } }}
+            >
+              Serfun Llanos
+            </Typography>
+            <Tooltip title="Buscar cliente por cédula">
+              <Search sx={{ mr: "auto" }}>
+                <SearchIconWrapper>
+                  <SearchIcon />
+                </SearchIconWrapper>
+                <StyledInputBase
+                  id="cedula"
+                  name="cedula"
+                  placeholder="Cédula"
+                  inputProps={{ "aria-label": "search" }}
+                />
+              </Search>
+            </Tooltip>
+            <Tooltip title="Cerrar Sesión">
+              <IconButton
+                size="large"
+                aria-label="logout"
+                color="inherit"
+                onClick={() => handleLogout()}
+              >
+                <LogoutIcon />
+              </IconButton>
+            </Tooltip>
+          </Toolbar>
+        </AppBar>
+      </Box>
+      <Container component="main" maxWidth="xs">
+        <CssBaseline />
+        <Box
+          sx={{
+            marginY: "auto",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
         >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+          <Tooltip title={!client ? "Busca un cliente para iniciar." : null}>
+            <Box
+              component="form"
+              onSubmit={handleSubmit}
+              noValidate
+              sx={{ mt: 1, width: "100%" }}
+            >
+              {isLoading
+                ? new Array(8).fill(0).map((_, index) => (
+                    <Skeleton width="100%" key={index.toString()}>
+                      <TextField margin="normal" />
+                    </Skeleton>
+                  ))
+                : fields.map((field) => renderField(field))}
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{ mt: 3, mb: 2 }}
+                disabled={!client}
+              >
+                Guardar
+              </Button>
+            </Box>
+          </Tooltip>
+        </Box>
+      </Container>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        message={error}
+        onClose={() => {
+          setError(null);
+        }}
+      >
+        <Alert
+          onClose={() => {
+            setError(null);
+          }}
+          severity="error"
+          variant="standard"
         >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+          {error}
+        </Alert>
+      </Snackbar>
+      <Snackbar
+        open={success}
+        autoHideDuration={6000}
+        message={error}
+        onClose={() => {
+          setSuccess(false);
+        }}
+      >
+        <Alert
+          onClose={() => {
+            setSuccess(false);
+          }}
+          severity="success"
+          variant="standard"
         >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+          Usuario actulizado exitosamente.
+        </Alert>
+      </Snackbar>
+    </>
   );
 }
