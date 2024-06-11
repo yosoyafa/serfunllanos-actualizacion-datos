@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const apiUrl = `https://ws.crmolivosvillavicencio.com/app/getCamposFormulario01.php`;
+  const apiUrl = `https://ws.crmolivosvillavicencio.com/app/getCamposFormulario02.php`;
 
   try {
     const response = await fetch(apiUrl);
