@@ -10,7 +10,7 @@ interface UpdateBody {
 }
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
+  const body = await request.json();
 
   //const apiUrl = `https://${user.url}getUpdateInfo2.php?user_name=${user.user_name}&latitud=${lat}&longitud=${lon}&numerodocumento=${cc}&fecha=${fecha}&user_id=${user.id}&celular1_o=${tel1viejo}&celular1_n=${tel1nuevo}&celular2_o=${tel2viejo}&celular2_n=${tel2nuevo}&email_o=${emailViejo}&email_n=${emailNuevo}&direccion_o=${direccionVieja}&direccion_n=${direccionNueva}&barrio_o=${barrioViejo}&barrio_n=${barrioNuevo}&indicaciones_o=${indicacionVieja}&indicaciones_n=${indicacionNueva}&dia_cobro_o=${diaCobroViejo}&dia_cobro_n=${diaCobroNuevo}&nueva=${1}`;
 

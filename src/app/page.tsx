@@ -85,7 +85,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchFields();
-  }, []);
+  }, [fetchFields]);
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -164,7 +164,9 @@ export default function Home() {
             defaultValue={defaultValue}
           >
             {parsedOptions?.list?.map(({ name, id }) => (
-              <MenuItem value={id}>{name}</MenuItem>
+              <MenuItem key={name} value={id}>
+                {name}
+              </MenuItem>
             ))}
           </Select>
         </FormControl>
