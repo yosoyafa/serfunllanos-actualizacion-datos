@@ -85,7 +85,7 @@ export default function Home() {
 
   useEffect(() => {
     fetchFields();
-  }, [fetchFields]);
+  }, []);
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
