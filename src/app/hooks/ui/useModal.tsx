@@ -1,11 +1,7 @@
 import { Box, Button, Grid, Modal, Typography } from "@mui/material";
 import { useState } from "react";
 
-const useModal = ({
-  title,
-  onAccept = () => {},
-  onCancel = () => {},
-}: {
+const useModal = (options?: {
   title?: string;
   onAccept?: () => void;
   onCancel?: () => void;
@@ -36,36 +32,44 @@ const useModal = ({
             maxWidth: "90%",
           }}
         >
-          <Typography variant="h6" component="h2" textAlign="center">
-            {title}
-          </Typography>
+          {options?.title && (
+            <Typography variant="h6" component="h2" textAlign="center">
+              {options?.title}
+            </Typography>
+          )}
           {children}
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={4}>
-              <Button
-                onClick={() => {
-                  onCancel();
-                  toggle();
-                }}
-                fullWidth
-              >
-                Cancelar
-              </Button>
+          {options?.onAccept && (
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={4}>
+                <Button
+                  onClick={() => {
+                    if (options.onCancel) {
+                      options.onCancel();
+                    }
+                    toggle();
+                  }}
+                  fullWidth
+                >
+                  Cancelar
+                </Button>
+              </Grid>
+              <Grid item xs={8}>
+                <Button
+                  onClick={() => {
+                    if (options.onAccept) {
+                      options.onAccept();
+                    }
+                    toggle();
+                  }}
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2 }}
+                >
+                  Ok
+                </Button>
+              </Grid>
             </Grid>
-            <Grid item xs={8}>
-              <Button
-                onClick={() => {
-                  onAccept();
-                  toggle();
-                }}
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-              >
-                Ok
-              </Button>
-            </Grid>
-          </Grid>
+          )}
         </Box>
       </Modal>
     ),

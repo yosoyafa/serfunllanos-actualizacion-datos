@@ -7,7 +7,6 @@ import {
   Typography,
   Box,
   TextField,
-  CssBaseline,
   Button,
 } from "@mui/material";
 import { useAuth } from "../hooks/auth/useAuth";
@@ -30,7 +29,6 @@ export default function SignIn() {
 
   return (
     <Container component="main" maxWidth="xs">
-      <CssBaseline />
       <Box
         sx={{
           marginTop: 8,
@@ -47,7 +45,7 @@ export default function SignIn() {
           alt="Logo Los Olivos"
         />
         <Typography component="h1" variant="h5">
-          Serfun Llanos
+          SerfunLlanos
         </Typography>
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
           <TextField

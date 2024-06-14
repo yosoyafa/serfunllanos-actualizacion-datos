@@ -48,6 +48,7 @@ type Client = {
   celular2: string;
   direccion: string;
   idbarrio: string;
+  idciudad: string;
   dia_cobro: string;
   indicaciones: string;
   email: string;

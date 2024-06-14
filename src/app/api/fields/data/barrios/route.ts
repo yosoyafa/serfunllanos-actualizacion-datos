@@ -6,14 +6,12 @@ export const GET = withSession(async () => {
 
   try {
     const response = await fetch(apiUrl);
-    console.log({ response });
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.log({ error });
     return NextResponse.json(
       { error: "Failed to fetch data" },
       { status: 500 },

@@ -5,32 +5,20 @@ import {
   TextField,
   Box,
   Container,
-  AppBar,
-  IconButton,
   Skeleton,
-  Toolbar,
   Tooltip,
-  Typography,
-  Autocomplete,
   Grid,
-  Snackbar,
-  Alert,
 } from "@mui/material";
-import {
-  Logout as LogoutIcon,
-  Search as SearchIcon,
-  Refresh as RefreshIcon,
-} from "@mui/icons-material";
-import { Search, SearchIconWrapper, StyledInputBase } from "./components";
 import { useFields } from "./hooks/data/useFields";
-import { useCiudades } from "./hooks/data/useCiudades";
-import { useBarrios } from "./hooks/data/useBarrios";
 import { useFetchCliente } from "./hooks/client/useFetchCliente";
 import { useUpdateCliente } from "./hooks/client/useUpdateCliente";
 import { useAuth } from "./hooks/auth/useAuth";
 import { useSnackbar } from "./hooks/ui/useSnackbar";
 import { useModal } from "./hooks/ui/useModal";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { AppBar } from "./components/AppBar";
+import { useRenderFields } from "./hooks/ui/useRenderFields";
+import { useFieldsValidation } from "./hooks/ui/useFieldsValidation";
 
 export default function Home() {
   const {
@@ -38,12 +26,11 @@ export default function Home() {
     isLoading: fieldsIsLoading,
     error: fieldsError,
   } = useFields();
-  const { ciudades, error: ciudadesError } = useCiudades();
-  const { barrios, error: barriosError } = useBarrios();
 
   const {
     cliente,
     fetchCliente,
+    error: fetchError,
     isLoading: clientIsLoading,
   } = useFetchCliente();
 
@@ -54,10 +41,22 @@ export default function Home() {
     isSuccess: isSuccessUpdating,
   } = useUpdateCliente(fields);
 
+  useEffect(() => {
+    if (isSuccessUpdating && cliente) {
+      fetchCliente(cliente?.numero_documento);
+    }
+  }, [isSuccessUpdating]);
+
+  const {
+    renderField,
+    error: renderFieldError,
+    isLoading: renderFieldIsLoading,
+  } = useRenderFields(cliente);
+
   const { logout } = useAuth();
 
-  const error = fieldsError || ciudadesError || barriosError || updateError;
-  const isLoading = fieldsIsLoading || clientIsLoading;
+  const error = fieldsError || renderFieldError || updateError || fetchError;
+  const isLoading = fieldsIsLoading || clientIsLoading || renderFieldIsLoading;
 
   const { Snackbar: ErrorSnackbar } = useSnackbar({
     open: !!error,
@@ -72,6 +71,12 @@ export default function Home() {
   });
 
   const formRef = useRef<HTMLFormElement>(null);
+
+  const { FieldsValidationContent } = useFieldsValidation({
+    fields,
+    cliente,
+    form: formRef.current,
+  });
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -95,161 +100,18 @@ export default function Home() {
     }
   };
 
-  const { Modal: ConfirmationModal, toggle: toggleModal } = useModal({
-    title: "Estas seguro de que quieres guardar los siguientes datos:",
-    onAccept: requestUpdate,
-  });
-
-  const renderField = (field: Field) => {
-    const { type, id, name, title } = field;
-    if (type === "text") {
-      return (
-        <TextField
-          key={id.toString()}
-          margin="normal"
-          required
-          fullWidth
-          id={name}
-          label={title}
-          name={name}
-          defaultValue={cliente?.[name]}
-          disabled={!cliente}
-          InputProps={{
-            endAdornment: cliente && (
-              <Tooltip title="Recuperar valor original">
-                <IconButton
-                  disabled={!cliente}
-                  onClick={() => {
-                    const inputElement = document.getElementById(
-                      name,
-                    ) as HTMLInputElement;
-                    if (inputElement) {
-                      const newValue = cliente ? cliente[name] : "";
-                      inputElement.value = newValue as string;
-                    }
-                  }}
-                >
-                  <RefreshIcon />
-                </IconButton>
-              </Tooltip>
-            ),
-          }}
-        />
-      );
-    } else {
-      const isBarrio = name === "barrio";
-
-      const options = isBarrio ? barrios : ciudades;
-      const defaultValue = options.find(
-        (option) => option.id === (isBarrio ? cliente?.idbarrio : "1"),
-      );
-
-      return (
-        <Autocomplete
-          key={id.toString()}
-          disablePortal
-          options={options}
-          fullWidth
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              id={name}
-              name={name}
-              margin="normal"
-              label={title}
-              placeholder={title}
-            />
-          )}
-          defaultValue={defaultValue}
-          disabled={!cliente}
-          noOptionsText="No hay opciones"
-        />
-      );
-    }
-  };
-
-  const changedFields = fields
-    .map(({ title, name }) => ({
-      title,
-      oldValue: cliente?.[name]?.toString(),
-      newValue: new FormData(formRef.current || undefined)
-        .get(name)
-        ?.toString(),
-    }))
-    .filter(({ oldValue, newValue }) => oldValue !== newValue);
-
-  const renderFieldsValidation = () => {
-    if (changedFields.length === 0) {
-      return (
-        <Box marginY={2}>
-          <Typography variant="h6" component="h3">
-            No hay cambios
-          </Typography>
-        </Box>
-      );
-    }
-
-    return changedFields.map(({ title, oldValue, newValue }) => (
-      <Box marginY={4} key={title}>
-        <Typography component="h3">{title}:</Typography>
-        <Box marginLeft={1}>
-          <Typography>Antiguo valor: {oldValue}</Typography>
-          <Typography>Nuevo valor: {newValue}</Typography>
-        </Box>
-      </Box>
-    ));
-  };
+  const { Modal: ConfirmationModal, toggle: toggleModal } = useModal();
 
   return (
     <>
       <Box sx={{ flexGrow: 1 }}>
-        <AppBar position="static">
-          <Toolbar
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              gap: 2,
-            }}
-            component="form"
-            onSubmit={handleSearch}
-          >
-            <Typography
-              variant="h6"
-              noWrap
-              component="div"
-              sx={{ display: { xs: "none", sm: "block" } }}
-            >
-              Serfun Llanos
-            </Typography>
-            <Tooltip title="Buscar cliente por cédula">
-              <Search sx={{ mr: "auto" }}>
-                <SearchIconWrapper>
-                  <SearchIcon />
-                </SearchIconWrapper>
-                <StyledInputBase
-                  id="cedula"
-                  name="cedula"
-                  placeholder="Cédula"
-                  inputProps={{ "aria-label": "search" }}
-                  disabled={updateIsLoading}
-                />
-              </Search>
-            </Tooltip>
-            <Tooltip title="Cerrar Sesión">
-              <IconButton
-                size="large"
-                aria-label="logout"
-                color="inherit"
-                onClick={async () => {
-                  await logout();
-                }}
-              >
-                <LogoutIcon />
-              </IconButton>
-            </Tooltip>
-          </Toolbar>
-        </AppBar>
+        <AppBar
+          disabled={updateIsLoading}
+          onLogout={() => {
+            logout();
+          }}
+          onSubmitSearch={handleSearch}
+        />
       </Box>
       <Container component="main" maxWidth="xs">
         <Box
@@ -305,7 +167,14 @@ export default function Home() {
           </Tooltip>
         </Box>
       </Container>
-      <ConfirmationModal>{renderFieldsValidation()}</ConfirmationModal>
+      <ConfirmationModal>
+        <FieldsValidationContent
+          onAccept={requestUpdate}
+          onCancel={() => {
+            toggleModal();
+          }}
+        />
+      </ConfirmationModal>
       {ErrorSnackbar()}
       {SuccessSnackbar()}
     </>

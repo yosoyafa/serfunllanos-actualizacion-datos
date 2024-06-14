@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const useFetchCliente = (options?: { onAbort?: () => void }) => {
-  const [cliente, setCliente] = useState<Client | null>();
+  const [cliente, setCliente] = useState<Client>();
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>();
 
@@ -9,19 +9,16 @@ const useFetchCliente = (options?: { onAbort?: () => void }) => {
     setIsLoading(true);
     try {
       const res = await fetch(`/api/client/fetch?cc=${cedula}`);
-
       if (!res.ok) {
         setError(res.statusText);
-        if (res.status === 401 && options?.onAbort) {
-          options.onAbort();
-        }
+        throw new Error(res.statusText);
       }
 
       const data = await res.json();
 
       setCliente(data[0] as Client);
     } catch (error) {
-      console.error(error);
+      setError((error as Error).message);
     } finally {
       setIsLoading(false);
     }

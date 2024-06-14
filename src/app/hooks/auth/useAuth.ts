@@ -52,7 +52,7 @@ const useAuth = () => {
         router.push("/login");
       }
     } catch (error) {
-      console.error(error);
+      setError((error as Error).message);
     }
   };
 

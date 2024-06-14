@@ -8,7 +8,8 @@ export const GET = withSession(async (request: Request) => {
 
   try {
     const session = (await getSession()) as Session;
-    const apiUrl = `${session.user.url}getCarterabyCedula.php?user_id=${session.user.id}+&NumeroDocumento=${cc}`;
+    const apiUrl = `${session.user.url}getCarterabyCedulaapp.php?user_id=${session.user.id}+&NumeroDocumento=${cc}`;
+
     const response = await fetch(apiUrl);
 
     if (!response.ok) {
@@ -16,13 +17,15 @@ export const GET = withSession(async (request: Request) => {
     }
 
     const data = await response.json();
-    console.log({ data });
+    if (data.estado === "negative") {
+      throw new Error("No se encontro cliente");
+    }
 
     return NextResponse.json(data);
   } catch (error) {
     const response = NextResponse.json(
       { error },
-      { status: 500, statusText: "No se encontro el cliente" },
+      { status: 500, statusText: (error as Error).message },
     );
     return response;
   }

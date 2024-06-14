@@ -9,7 +9,7 @@ export const POST = withSession(async (request: NextRequest) => {
 
   try {
     const response = await fetch(
-      `https://${session?.user.url}getUpdateInfo.php`,
+      `https://${session?.user.url}getUpdateInfoapp.php`,
       {
         method: "POST",
         body: {
