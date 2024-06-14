@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write --ignore-path .gitignore .",
-    "deploy": "git pull && yarn build && yarn start"
+    "deploy": "git pull && yarn && yarn build && yarn start"
   },
   "dependencies": {
     "@emotion/cache": "^11.11.0",
