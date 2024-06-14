@@ -1,52 +1,30 @@
 "use client";
-import { useRouter } from "next/navigation";
-import Avatar from "@mui/material/Avatar";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import Box from "@mui/material/Box";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import Typography from "@mui/material/Typography";
-import Container from "@mui/material/Container";
-import { Alert } from "@mui/material";
-import { useEffect, useState } from "react";
-import Cookies from "js-cookie";
+
+import Image from "next/image";
+import {
+  Alert,
+  Container,
+  Typography,
+  Box,
+  TextField,
+  CssBaseline,
+  Button,
+} from "@mui/material";
+import { useAuth } from "../hooks/auth/useAuth";
+import logo from "../../../public/images/icon.png";
 
 export default function SignIn() {
-  const router = useRouter();
-
-  const [error, setError] = useState<string | null>(null);
+  const { login, error, isLoading } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setError(null);
     const data = new FormData(event.currentTarget);
 
     const username = data.get("username")?.toString();
     const password = data.get("password")?.toString();
 
     if (!!username && !!password) {
-      try {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          body: JSON.stringify({
-            user_name: username,
-            password,
-            latitud: 1,
-            longitud: 1,
-            fecha: new Date().toLocaleDateString("en-GB"),
-            nueva: 1,
-          }),
-        });
-        if (!res.ok) {
-          const data = await res.json();
-          setError(data.message);
-        } else {
-          router.push("/");
-        }
-      } catch (error) {
-        console.error(error);
-      }
+      await login({ username, password });
     }
   };
 
@@ -61,9 +39,13 @@ export default function SignIn() {
           alignItems: "center",
         }}
       >
-        <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
-          <LockOutlinedIcon />
-        </Avatar>
+        <Image
+          src={logo}
+          width={100}
+          height={100}
+          style={{ margin: 20 }}
+          alt="Logo Los Olivos"
+        />
         <Typography component="h1" variant="h5">
           Serfun Llanos
         </Typography>
@@ -92,6 +74,7 @@ export default function SignIn() {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={isLoading}
           >
             Iniciar Sesión
           </Button>

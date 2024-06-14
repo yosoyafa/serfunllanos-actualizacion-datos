@@ -1,137 +1,107 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Button from "@mui/material/Button";
-import CssBaseline from "@mui/material/CssBaseline";
-import TextField from "@mui/material/TextField";
-import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import {
-  Alert,
+  Button,
+  TextField,
+  Box,
+  Container,
   AppBar,
-  FormControl,
   IconButton,
-  InputLabel,
-  MenuItem,
-  Select,
   Skeleton,
-  Snackbar,
   Toolbar,
   Tooltip,
   Typography,
+  Autocomplete,
+  Grid,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   Logout as LogoutIcon,
   Search as SearchIcon,
+  Refresh as RefreshIcon,
 } from "@mui/icons-material";
 import { Search, SearchIconWrapper, StyledInputBase } from "./components";
-import { useRouter } from "next/navigation";
+import { useFields } from "./hooks/data/useFields";
+import { useCiudades } from "./hooks/data/useCiudades";
+import { useBarrios } from "./hooks/data/useBarrios";
+import { useFetchCliente } from "./hooks/client/useFetchCliente";
+import { useUpdateCliente } from "./hooks/client/useUpdateCliente";
+import { useAuth } from "./hooks/auth/useAuth";
+import { useSnackbar } from "./hooks/ui/useSnackbar";
+import { useModal } from "./hooks/ui/useModal";
+import { useRef } from "react";
 
 export default function Home() {
-  const router = useRouter();
+  const {
+    fields,
+    isLoading: fieldsIsLoading,
+    error: fieldsError,
+  } = useFields();
+  const { ciudades, error: ciudadesError } = useCiudades();
+  const { barrios, error: barriosError } = useBarrios();
 
-  const [fields, setFields] = useState<Field[]>([]);
-  const [client, setClient] = useState<Client | null>();
+  const {
+    cliente,
+    fetchCliente,
+    isLoading: clientIsLoading,
+  } = useFetchCliente();
 
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const {
+    updateCliente,
+    isLoading: updateIsLoading,
+    error: updateError,
+    isSuccess: isSuccessUpdating,
+  } = useUpdateCliente(fields);
 
-  const [error, setError] = useState<string | null>();
-  const [success, setSuccess] = useState<boolean>();
+  const { logout } = useAuth();
 
-  const fetchFields = async () => {
-    setIsLoading(true);
+  const error = fieldsError || ciudadesError || barriosError || updateError;
+  const isLoading = fieldsIsLoading || clientIsLoading;
 
-    try {
-      const res = await fetch("/api/fields");
-      if (!res.ok) {
-        setError(res.statusText);
-        if (res.status === 401) {
-          handleLogout();
-        }
-      }
+  const { Snackbar: ErrorSnackbar } = useSnackbar({
+    open: !!error,
+    severity: "error",
+    message: error,
+  });
 
-      const fetchedFields = await res.json();
+  const { Snackbar: SuccessSnackbar } = useSnackbar({
+    open: isSuccessUpdating,
+    severity: "success",
+    message: "Cliente actualizado correctamente",
+  });
 
-      setFields(fetchedFields);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchCC = async (cedula: string) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/clients/fetch?cc=${cedula}`);
-
-      if (!res.ok) {
-        setError(res.statusText);
-        if (res.status === 401) {
-          handleLogout();
-        }
-      }
-
-      const data = await res.json();
-
-      return data[0] as Client;
-    } catch (error) {
-      console.error(error);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchFields();
-  }, []);
+  const formRef = useRef<HTMLFormElement>(null);
 
   const handleSearch = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-
-    const cedula = data.get("cedula")?.toString();
-
+    const cedula = new FormData(event.currentTarget).get("cedula")?.toString();
     if (!!cedula) {
-      const clientData = await fetchCC(cedula);
-      setClient(clientData);
+      await fetchCliente(cedula);
     }
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const formData = fields.map(({ name }) => ({
-      field: name,
-      newValue: data.get(name)?.toString(),
-      // @ts-ignore
-      oldValue: client?.[name],
-    }));
-
-    const updateData = await fetch("/api/client/update", {
-      method: "POST",
-      body: JSON.stringify({ updateData: formData }),
-    });
+    toggleModal();
   };
 
-  const handleLogout = async () => {
-    try {
-      const res = await fetch("/api/auth/logout", {
-        method: "POST",
+  const requestUpdate = () => {
+    if (cliente) {
+      updateCliente({
+        data: new FormData(formRef.current || undefined),
+        cliente,
       });
-      if (!res.ok) {
-        throw new Error("Network response was not ok");
-      } else {
-        router.push("/login");
-      }
-    } catch (error) {
-      console.error(error);
     }
   };
+
+  const { Modal: ConfirmationModal, toggle: toggleModal } = useModal({
+    title: "Estas seguro de que quieres guardar los siguientes datos:",
+    onAccept: requestUpdate,
+  });
 
   const renderField = (field: Field) => {
-    const { type, id, name, title, opciones } = field;
+    const { type, id, name, title } = field;
     if (type === "text") {
       return (
         <TextField
@@ -142,36 +112,92 @@ export default function Home() {
           id={name}
           label={title}
           name={name}
-          defaultValue={client?.[name]}
-          disabled={!client}
+          defaultValue={cliente?.[name]}
+          disabled={!cliente}
+          InputProps={{
+            endAdornment: cliente && (
+              <Tooltip title="Recuperar valor original">
+                <IconButton
+                  disabled={!cliente}
+                  onClick={() => {
+                    const inputElement = document.getElementById(
+                      name,
+                    ) as HTMLInputElement;
+                    if (inputElement) {
+                      const newValue = cliente ? cliente[name] : "";
+                      inputElement.value = newValue as string;
+                    }
+                  }}
+                >
+                  <RefreshIcon />
+                </IconButton>
+              </Tooltip>
+            ),
+          }}
         />
       );
     } else {
-      // @ts-ignore
-      const parsedOptions: Field["opciones"] = JSON.parse(opciones);
-      const defaultValue =
-        parsedOptions?.list.find((item) => item.name === client?.[name])?.id ??
-        2;
+      const isBarrio = name === "barrio";
+
+      const options = isBarrio ? barrios : ciudades;
+      const defaultValue = options.find(
+        (option) => option.id === (isBarrio ? cliente?.idbarrio : "1"),
+      );
+
       return (
-        <FormControl variant="outlined" fullWidth margin="normal">
-          <InputLabel id={name} sx={{ textTransform: "capitalize" }}>
-            {name}
-          </InputLabel>
-          <Select
-            labelId={name}
-            label={name}
-            disabled={!client}
-            defaultValue={defaultValue}
-          >
-            {parsedOptions?.list?.map(({ name, id }) => (
-              <MenuItem key={name} value={id}>
-                {name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+        <Autocomplete
+          key={id.toString()}
+          disablePortal
+          options={options}
+          fullWidth
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              id={name}
+              name={name}
+              margin="normal"
+              label={title}
+              placeholder={title}
+            />
+          )}
+          defaultValue={defaultValue}
+          disabled={!cliente}
+          noOptionsText="No hay opciones"
+        />
       );
     }
+  };
+
+  const changedFields = fields
+    .map(({ title, name }) => ({
+      title,
+      oldValue: cliente?.[name]?.toString(),
+      newValue: new FormData(formRef.current || undefined)
+        .get(name)
+        ?.toString(),
+    }))
+    .filter(({ oldValue, newValue }) => oldValue !== newValue);
+
+  const renderFieldsValidation = () => {
+    if (changedFields.length === 0) {
+      return (
+        <Box marginY={2}>
+          <Typography variant="h6" component="h3">
+            No hay cambios
+          </Typography>
+        </Box>
+      );
+    }
+
+    return changedFields.map(({ title, oldValue, newValue }) => (
+      <Box marginY={4} key={title}>
+        <Typography component="h3">{title}:</Typography>
+        <Box marginLeft={1}>
+          <Typography>Antiguo valor: {oldValue}</Typography>
+          <Typography>Nuevo valor: {newValue}</Typography>
+        </Box>
+      </Box>
+    ));
   };
 
   return (
@@ -206,6 +232,7 @@ export default function Home() {
                   name="cedula"
                   placeholder="Cédula"
                   inputProps={{ "aria-label": "search" }}
+                  disabled={updateIsLoading}
                 />
               </Search>
             </Tooltip>
@@ -214,7 +241,9 @@ export default function Home() {
                 size="large"
                 aria-label="logout"
                 color="inherit"
-                onClick={() => handleLogout()}
+                onClick={async () => {
+                  await logout();
+                }}
               >
                 <LogoutIcon />
               </IconButton>
@@ -223,7 +252,6 @@ export default function Home() {
         </AppBar>
       </Box>
       <Container component="main" maxWidth="xs">
-        <CssBaseline />
         <Box
           sx={{
             marginY: "auto",
@@ -232,12 +260,13 @@ export default function Home() {
             alignItems: "center",
           }}
         >
-          <Tooltip title={!client ? "Busca un cliente para iniciar." : null}>
+          <Tooltip title={!cliente ? "Busca un cliente para iniciar." : null}>
             <Box
               component="form"
               onSubmit={handleSubmit}
               noValidate
               sx={{ mt: 1, width: "100%" }}
+              ref={formRef}
             >
               {isLoading
                 ? new Array(8).fill(0).map((_, index) => (
@@ -246,55 +275,39 @@ export default function Home() {
                     </Skeleton>
                   ))
                 : fields.map((field) => renderField(field))}
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{ mt: 3, mb: 2 }}
-                disabled={!client}
-              >
-                Guardar
-              </Button>
+              <Grid container spacing={2} alignItems="center">
+                {cliente && (
+                  <Grid item xs={4}>
+                    <Button
+                      onClick={() => fetchCliente(cliente?.numero_documento)}
+                      fullWidth
+                      variant="outlined"
+                      sx={{ mt: 3, mb: 2 }}
+                      disabled={!cliente}
+                    >
+                      Restaurar
+                    </Button>
+                  </Grid>
+                )}
+                <Grid item xs={cliente ? 8 : 12}>
+                  <Button
+                    type="submit"
+                    fullWidth
+                    variant="contained"
+                    sx={{ mt: 3, mb: 2 }}
+                    disabled={!cliente}
+                  >
+                    Guardar
+                  </Button>
+                </Grid>
+              </Grid>
             </Box>
           </Tooltip>
         </Box>
       </Container>
-      <Snackbar
-        open={!!error}
-        autoHideDuration={6000}
-        message={error}
-        onClose={() => {
-          setError(null);
-        }}
-      >
-        <Alert
-          onClose={() => {
-            setError(null);
-          }}
-          severity="error"
-          variant="standard"
-        >
-          {error}
-        </Alert>
-      </Snackbar>
-      <Snackbar
-        open={success}
-        autoHideDuration={6000}
-        message={error}
-        onClose={() => {
-          setSuccess(false);
-        }}
-      >
-        <Alert
-          onClose={() => {
-            setSuccess(false);
-          }}
-          severity="success"
-          variant="standard"
-        >
-          Usuario actulizado exitosamente.
-        </Alert>
-      </Snackbar>
+      <ConfirmationModal>{renderFieldsValidation()}</ConfirmationModal>
+      {ErrorSnackbar()}
+      {SuccessSnackbar()}
     </>
   );
 }

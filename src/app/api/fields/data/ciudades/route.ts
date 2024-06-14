@@ -2,7 +2,7 @@ import { withSession } from "@/app/hocs/withSession";
 import { NextResponse } from "next/server";
 
 export const GET = withSession(async () => {
-  const apiUrl = `https://ws.crmolivosvillavicencio.com/app/getCamposFormulario02.php`;
+  const apiUrl = `https://ws.crmolivosvillavicencio.com/app/getCiudades.php`;
 
   try {
     const response = await fetch(apiUrl);

@@ -34,7 +34,7 @@ export async function createSessionToken(user: User) {
   return session;
 }
 
-export async function getSession() {
+export async function getSession(): Promise<Session | null> {
   const session = cookies().get("session")?.value;
   if (!session) return null;
   return await decrypt(session);

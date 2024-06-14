@@ -1,21 +1,13 @@
+import { withSession } from "@/app/hocs/withSession";
 import { Session, getSession } from "@/lib";
 import { NextResponse } from "next/server";
 
-export async function GET(request: Request) {
+export const GET = withSession(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const cc = searchParams.get("cc");
 
   try {
     const session = (await getSession()) as Session;
-    if (!session) {
-      const response = NextResponse.json(
-        { error: "Session expired" },
-        { status: 401, statusText: "Session expired" },
-      );
-      response.cookies.set("session", "", { expires: new Date(0), path: "/" });
-      return response;
-    }
-
     const apiUrl = `${session.user.url}getCarterabyCedula.php?user_id=${session.user.id}+&NumeroDocumento=${cc}`;
     const response = await fetch(apiUrl);
 
@@ -24,14 +16,14 @@ export async function GET(request: Request) {
     }
 
     const data = await response.json();
+    console.log({ data });
 
     return NextResponse.json(data);
   } catch (error) {
-    console.log({ error });
     const response = NextResponse.json(
       { error },
       { status: 500, statusText: "No se encontro el cliente" },
     );
     return response;
   }
-}
+});

@@ -8,6 +8,16 @@ type Field = {
   };
 };
 
+type Barrio = {
+  id: string;
+  nombre: string;
+};
+
+type Ciudad = {
+  id: string;
+  nombre: string;
+};
+
 type User = {
   user_name?: string;
   first_name?: string;
