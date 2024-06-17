@@ -9,21 +9,23 @@ export const POST = withSession(async (request: NextRequest) => {
 
   try {
     const response = await fetch(
-      `https://${session?.user.url}getUpdateInfoapp.php`,
+      `${session?.user.url}getUpdateInfoapp.php`,
       {
         method: "POST",
         body: {
-          ...body,
+          ...JSON.parse(body),
           user_id: session?.user.id,
         },
       },
     );
+    console.log({response})
 
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
 
     const data = await response.json();
+    console.log({resp: NextResponse.json(data)})
 
     return NextResponse.json(data);
   } catch (error) {
