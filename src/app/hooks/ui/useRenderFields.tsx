@@ -3,7 +3,13 @@ import { Refresh as RefreshIcon } from "@mui/icons-material";
 import { useCiudades } from "../data/useCiudades";
 import { useBarrios } from "../data/useBarrios";
 
-const useRenderFields = (cliente?: Client) => {
+const useRenderFields = ({
+  cliente,
+  dataAlreadyUpdated,
+}: {
+  cliente?: Client;
+  dataAlreadyUpdated: boolean;
+}) => {
   const {
     ciudades,
     error: ciudadesError,
@@ -14,6 +20,8 @@ const useRenderFields = (cliente?: Client) => {
     error: barriosError,
     isLoading: barriosIsLoading,
   } = useBarrios();
+
+  const isDisabled = !cliente || dataAlreadyUpdated;
 
   const renderField = (field: Field) => {
     const { type, id, name, title } = field;
@@ -28,12 +36,12 @@ const useRenderFields = (cliente?: Client) => {
           label={title}
           name={name}
           defaultValue={cliente?.[name]}
-          disabled={!cliente}
-          /* InputProps={{
+          disabled={isDisabled}
+          InputProps={{
             endAdornment: cliente && (
               <Tooltip title="Recuperar valor original">
                 <IconButton
-                  disabled={!cliente}
+                  disabled={isDisabled}
                   onClick={() => {
                     const inputElement = document.getElementById(
                       name,
@@ -48,7 +56,7 @@ const useRenderFields = (cliente?: Client) => {
                 </IconButton>
               </Tooltip>
             ),
-          }} */
+          }}
         />
       );
     } else {
@@ -77,7 +85,7 @@ const useRenderFields = (cliente?: Client) => {
             />
           )}
           defaultValue={defaultValue}
-          disabled={!cliente}
+          disabled={isDisabled}
           noOptionsText="No hay opciones"
         />
       );

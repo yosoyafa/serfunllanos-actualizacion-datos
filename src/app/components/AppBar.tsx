@@ -11,7 +11,7 @@ import {
   Search as SearchIcon,
 } from "@mui/icons-material";
 import Image from "next/image";
-import { Search, SearchIconWrapper, StyledInputBase } from ".";
+import { Search, SearchIconWrapper, StyledInputBase } from "./Search";
 import icon from "../../../public/images/icon-no-bg.png";
 
 const AppBar = ({

@@ -76,7 +76,8 @@ const useFieldsValidation = ({
           </Grid>
           <Grid item xs={8}>
             <Button
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 onAccept();
               }}
               fullWidth

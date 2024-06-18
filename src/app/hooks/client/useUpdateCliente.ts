@@ -8,23 +8,32 @@ const useUpdateCliente = (fields: Field[]) => {
   const updateCliente = async ({
     data,
     cliente,
+    dataAlreadyUpdated,
   }: {
     data: FormData;
     cliente: Client;
+    dataAlreadyUpdated: boolean;
   }) => {
     setIsLoading(false);
     setError(null);
     setIsSuccess(false);
-    const formData = fields.map(({ name }) => ({
-      field: name,
-      newValue: data.get(name)?.toString(),
-      oldValue: cliente?.[name],
-    }));
+
+    const updateData = fields
+      .map(({ name }) => ({
+        field: name,
+        newValue: data.get(name)?.toString(),
+        oldValue: cliente?.[name],
+      }))
+      .filter(({ newValue, oldValue }) => newValue !== oldValue);
 
     try {
       const res = await fetch("/api/client/update", {
         method: "POST",
-        body: JSON.stringify({ updateData: formData }),
+        body: JSON.stringify({
+          updateData,
+          clientId: cliente.numero_documento,
+          dataAlreadyUpdated,
+        }),
       });
 
       if (!res.ok) {

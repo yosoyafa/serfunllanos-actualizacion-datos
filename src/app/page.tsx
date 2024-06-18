@@ -19,6 +19,7 @@ import { useEffect, useRef } from "react";
 import { AppBar } from "./components/AppBar";
 import { useRenderFields } from "./hooks/ui/useRenderFields";
 import { useFieldsValidation } from "./hooks/ui/useFieldsValidation";
+import { useCheckbox } from "./hooks/ui/useCheckbox";
 
 export default function Home() {
   const {
@@ -47,11 +48,23 @@ export default function Home() {
     }
   }, [isSuccessUpdating]);
 
+  const { Modal: ConfirmationModal, toggle: toggleModal } = useModal();
+
+  const { Checkbox, isChecked: dataAlreadyUpdated } = useCheckbox({
+    label: "Datos ya están actualizados",
+    disabled: !cliente,
+    onChecked: () => {
+      if (cliente) {
+        fetchCliente(cliente?.numero_documento);
+      }
+    },
+  });
+
   const {
     renderField,
     error: renderFieldError,
     isLoading: renderFieldIsLoading,
-  } = useRenderFields(cliente);
+  } = useRenderFields({ cliente, dataAlreadyUpdated });
 
   const { logout } = useAuth();
 
@@ -96,11 +109,12 @@ export default function Home() {
       updateCliente({
         data: new FormData(formRef.current || undefined),
         cliente,
+        dataAlreadyUpdated,
+      }).then(() => {
+        toggleModal();
       });
     }
   };
-
-  const { Modal: ConfirmationModal, toggle: toggleModal } = useModal();
 
   return (
     <>
@@ -130,6 +144,7 @@ export default function Home() {
               sx={{ mt: 1, width: "100%" }}
               ref={formRef}
             >
+              <Checkbox />
               {isLoading
                 ? new Array(8).fill(0).map((_, index) => (
                     <Skeleton width="100%" key={index.toString()}>
