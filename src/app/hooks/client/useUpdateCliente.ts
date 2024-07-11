@@ -32,7 +32,7 @@ const useUpdateCliente = (fields: Field[]) => {
         body: JSON.stringify({
           updateData,
           clientId: cliente.numero_documento,
-          dataAlreadyUpdated,
+          dataAlreadyUpdated: `${dataAlreadyUpdated}`,
         }),
       });
 
