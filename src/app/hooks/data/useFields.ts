@@ -16,8 +16,14 @@ const useFields = () => {
         throw new Error(res.statusText);
       }
 
-      const fetchedFields: Field[] = await res.json();
-      setFields(fetchedFields);
+      const rawFields = await res.json();
+
+      setFields(
+        rawFields.map((field: any) => ({
+          ...field,
+          editable: field.editable === "true",
+        })) as Field[],
+      );
     } catch (error) {
       setError((error as Error).message);
     } finally {

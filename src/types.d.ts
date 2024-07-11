@@ -6,6 +6,7 @@ type Field = {
   opciones?: {
     list: { id: number; name: string }[];
   };
+  editable: boolean;
 };
 
 type Barrio = {

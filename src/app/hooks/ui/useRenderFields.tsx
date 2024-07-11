@@ -24,7 +24,7 @@ const useRenderFields = ({
   const isDisabled = !cliente || dataAlreadyUpdated;
 
   const renderField = (field: Field) => {
-    const { type, id, name, title } = field;
+    const { type, id, name, title, editable } = field;
     if (type === "text") {
       return (
         <TextField
@@ -38,6 +38,7 @@ const useRenderFields = ({
           defaultValue={cliente?.[name]}
           disabled={isDisabled}
           InputProps={{
+            readOnly: !editable,
             endAdornment: cliente && (
               <Tooltip title="Recuperar valor original">
                 <IconButton
